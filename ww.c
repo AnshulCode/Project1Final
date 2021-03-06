@@ -6,6 +6,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <dirent.h>
+#include <regex.h>
 
 #ifndef DEBUG
 #define DEBUG 0
@@ -17,23 +18,32 @@
 struct stat sb;
 
 char buff[BFSIZE];
-void listFiles(const char *path)
+void get_file(const char *path)
 {
-    struct dirent *dp;
-    DIR *dir = opendir(path);
+        const char *pattern = "^wrap\\..*";
+        regex_t regex;
+        int rc;
 
-    if (!dir)
-        return;
 
-    while ((dp = readdir(dir)) != NULL)
-    {
-	    stat(dp->d_name, &sb);
-	    if (S_ISREG(sb.st_mode))
-        	printf("%s\n", dp->d_name);
-    }
+        struct dirent *dp;
+        DIR *dir = opendir(path);
 
-    closedir(dir);
+        if (!dir)
+                return;
+
+        while ((dp = readdir(dir)) != NULL)
+        {
+                stat(dp->d_name, &sb);
+                rc = regcomp(&regex, pattern, 0);
+                rc = regexec(&regex, dp->d_name, 0, NULL, 0);
+                //printf("name: %s, rc = %d\n", dp->d_name, rc);
+                if (S_ISREG(sb.st_mode) && dp->d_name[0] != '.' && rc)
+                        printf("%s\n", dp->d_name);
+        }
+
+        closedir(dir);
 }
+
 int word_wrap(int limit, char* name){
 	int fd;
 	if (name){
@@ -144,7 +154,7 @@ int main(int argc, char* argv[]) {
 		if (S_ISREG(sb.st_mode))
 			word_wrap(width, argv[2]);
 		if (S_ISDIR(sb.st_mode))
-			listFiles(argv[2]);
+			get_file(argv[2]);
 	}
 	printf("\n");
 	return 0;
