@@ -13,7 +13,7 @@
 #include <stdlib.h>
 #define BUFF_LENGTH (256)
 #define BYTES_READ (256)
-#define DEBUG (1)
+#define DEBUG (0)
 struct stat sb;
 char buff[BUFF_LENGTH];
 char fbuff[BUFF_LENGTH];
@@ -320,7 +320,7 @@ int word_wrap(int limit, char* filename){
 			sizer++;
 			word = (strbuf_t*)malloc(sizeof(strbuf_t));
 			sb_init(word,1);
-			if(buff[i] == '\n'){
+	      if(buff[i] == '\n'){
 				i++;
 				int count = 1;
 				
@@ -344,6 +344,7 @@ int word_wrap(int limit, char* filename){
 				count_tot = count_tot+count_word+1;
 				count_word = 0;
 			}
+			
 		}else if(count_word != 0){
 			sb_append(new_buf,'\n');
 
@@ -356,8 +357,27 @@ int word_wrap(int limit, char* filename){
 			sb_append(new_buf,' ');
 			sizer++;
 			word = (strbuf_t*)malloc(sizeof(strbuf_t));
+		      if(buff[i] == '\n'){
+				i++;
+				int count = 1;
+				
+				while(isspace(buff[i])!= 0){
+					if(buff[i] == '\n'){
+						count++;
+					}
+					if(count == 2){
+						sb_append(new_buf,'\n');
+                    	 sb_append(new_buf,'\n');
+                     	sizer = sizer+2;
+					}
+					i++;
+				}
+				if(count>=2){
+					count_tot = 0;
+					count_word = 0;
+				}
+			}
 			sb_init(word,1);
-			i++;
 			count_tot = count_word;
 			count_word = 0;
 		}
