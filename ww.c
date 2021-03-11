@@ -243,8 +243,6 @@ int word_wrap(int limit, char* filename, char* wname){
 		close(wfd);
 	}
 	if(exit_status == 1){
-		printf("%c",'\n');
-		perror("words are too long");
 		return EXIT_FAILURE;
 	}
 	close(fd);
@@ -343,7 +341,10 @@ int main(int argc, char* argv[]) {
 	if (argc == 3){
 		stat(argv[2], &sb);
 		if (S_ISREG(sb.st_mode)){
-			word_wrap(width, argv[2],NULL);
+			int status = word_wrap(width, argv[2],NULL);
+			if(status == EXIT_FAILURE){
+                 perror("words are too long");
+			}
 		}else if (S_ISDIR(sb.st_mode)){
 			get_file(argv[2]);
 		}else{
