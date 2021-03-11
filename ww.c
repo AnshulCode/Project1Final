@@ -13,23 +13,26 @@
 #include <stdlib.h>
 #define BUFF_LENGTH (256)
 #define BYTES_READ (256)
-#define DEBUG (1)
+#define DEBUG (0)
 struct stat sb;
 char buff[BUFF_LENGTH];
 char fbuff[BUFF_LENGTH];
 char wbuff[BUFF_LENGTH];
 
+// prints debug statements DEBUG == 0 does nothing
 void debug(char* title,char* messsage){
 	if(DEBUG == 1){
 		printf("DEBUG: %s %s\n ",title, messsage);
 	}
 }
+//checks if file is a direcotry or not
 int is_dir(const char *path)
 {
     struct stat path_stat;
     stat(path, &path_stat);
     return S_ISDIR(path_stat.st_mode);
 }
+//word wrap takes in int limit, filename and optional write file name param
 int word_wrap(int limit, char* filename, char* wname){
 
 	char* fname = filename;
@@ -78,8 +81,6 @@ int word_wrap(int limit, char* filename, char* wname){
 	sb_init(word,1);
 	strbuf_t* new_buf = (strbuf_t*)malloc(sizeof(strbuf_t));
 	sb_init(new_buf,size);
-
-	// prints word wrapping needs work but base case works
 	while(buff[i]!= '\0' && i<strlen(buff)-1){
 		if(isspace(buff[i])!=0 && buff[i]!='\n'){
 			while(isspace(buff[i])!=0 && buff[i]!='\n'){
@@ -109,7 +110,6 @@ int word_wrap(int limit, char* filename, char* wname){
                 }
                 i++;
              }
-            //`AQprint_string(word);
              word = (strbuf_t*)malloc(sizeof(strbuf_t));
              sb_init(word,1);
              if(count>=2){
@@ -158,6 +158,7 @@ int word_wrap(int limit, char* filename, char* wname){
 
 		if(count_word+count_tot+countw < lim){
 			sb_append(new_buf,' ');
+			count_tot++;
 			sizer++;
 		}
 			word = (strbuf_t*)malloc(sizeof(strbuf_t));
@@ -250,6 +251,7 @@ int word_wrap(int limit, char* filename, char* wname){
 
 	return EXIT_SUCCESS;
 }
+// create write file name
 void create_write_file_name(char* f, char* mainb){
    char* filen = f;
   strcat(mainb,"wrap.");
@@ -270,6 +272,7 @@ void create_write_file_name(char* f, char* mainb){
   strcat(mainb, add);
 }
 
+// gets files from directory
 void get_file(const char *path)
 {
 	const char *pattern = "^wrap\\..*";
@@ -339,10 +342,14 @@ int main(int argc, char* argv[]) {
 	}
 	if (argc == 3){
 		stat(argv[2], &sb);
-		if (S_ISREG(sb.st_mode))
+		if (S_ISREG(sb.st_mode)){
 			word_wrap(width, argv[2],NULL);
-		if (S_ISDIR(sb.st_mode))
+		}else if (S_ISDIR(sb.st_mode)){
 			get_file(argv[2]);
+		}else{
+			perror("Invalid Dir or file");
+		}
+		
 	}
 	
 	return 0;
