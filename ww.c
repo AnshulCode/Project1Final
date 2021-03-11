@@ -13,7 +13,7 @@
 #include <stdlib.h>
 #define BUFF_LENGTH (256)
 #define BYTES_READ (256)
-#define DEBUG (0)
+#define DEBUG (1)
 struct stat sb;
 char buff[BUFF_LENGTH];
 char fbuff[BUFF_LENGTH];
@@ -30,185 +30,7 @@ int is_dir(const char *path)
     stat(path, &path_stat);
     return S_ISDIR(path_stat.st_mode);
 }
-int word_wrap_dir(int limit, char* filenamep,char* fnamew){
-     
-
-	char* fname = filenamep;
-	int lim = limit;
-	int fd;
-	int size = BYTES_READ;
-	int bytes_read;
-	if(fname){
-		debug("Opening file " ,fname);
-		fd = open(fname,O_RDONLY);
-		if(fd == -1){
-			printf("File open error : %d \n" , errno);
-			return EXIT_FAILURE;
-		}
-		bytes_read = read(fd,buff,size);
-	}else{
-		fd = 0; 
-		bytes_read = read(0,buff,size);
-	}
-
-	int str = strlen(buff); 
-	if(bytes_read ==  str && fd !=0){
-		while(bytes_read ==  str){
-			close(fd);
-			size = size*2;
-			fd = open(fname,O_RDONLY);
-			read(fd,buff,size);
-			bytes_read = read(fd,buff,size);
-			str = strlen(buff); 
-		}
-	}
-
-	int i = 0;
-	int count_tot = 0;
-	int count_word = 0;
-	int sizer = 0;
-	int exit_status = 0;
-
-	strbuf_t* word = (strbuf_t*)malloc(sizeof(strbuf_t));
-	sb_init(word,1);
-	strbuf_t* new_buf = (strbuf_t*)malloc(sizeof(strbuf_t));
-	sb_init(new_buf,size);
-
-	// prints word wrapping needs work but base case works
-	while(buff[i]!= '\0' && i<strlen(buff)-1){
-		if(isspace(buff[i])!=0&& buff[i]!='\n'){
-			while(isspace(buff[i])!=0){
-				i++;
-			}
-		}
-		while(isspace(buff[i])==0){
-			if(buff[i] == '\n' ||buff[i] == '\0'){
-				
-				break;
-			}
-			sizer++;
-			sb_append(word,buff[i]);
-			count_word++;
-			i++;
-		}
-    if(buff[i] == '\n' && count_word == 0){
-             int count = 0;
-             while(isspace(buff[i])!= 0){
-                if(buff[i] == '\n'){
-                   count++;
-                   if(count == 2){
-                     sb_append(new_buf,'\n');
-                     sb_append(new_buf,'\n');
-                     sizer = sizer+2;
-				   }
-                }
-                i++;
-             }
-            //`AQprint_string(word);
-             word = (strbuf_t*)malloc(sizeof(strbuf_t));
-             sb_init(word,1);
-             if(count>=2){
-                count_tot = 0;
-             }
-         }
-         
-		if(count_word>lim){
-			 sb_append(new_buf,'\n');
-			 sizer++;
-			 int ind = 0;
-				while(word->data[ind]!='\0'){
-				sb_append(new_buf,word->data[ind]);
-				ind++;
-			}
-			sb_append(new_buf,'\n');
-			sizer++;
-			count_word = 0;
-			count_tot = 0;
-			exit_status = 1;
-			i++;
-		}
-		if(count_word+count_tot <=lim && count_word != 0){
-			int ind = 0;
-			while(word->data[ind]!='\0'){
-				sb_append(new_buf,word->data[ind]);
-				ind++;
-			}
-			sb_append(new_buf,' ');
-			sizer++;
-			word = (strbuf_t*)malloc(sizeof(strbuf_t));
-			sb_init(word,1);
-			if(buff[i] == '\n'){
-				i++;
-				int count = 1;
-				
-				while(isspace(buff[i])!= 0){
-					if(buff[i] == '\n'){
-						count++;
-					}
-					if(count == 2){
-						sb_append(new_buf,'\n');
-                    	 sb_append(new_buf,'\n');
-                     	sizer = sizer+2;
-					}
-					i++;
-				}
-				if(count>=2){
-					count_tot = 0;
-					count_word = 0;
-				}
-			}else{
-				i++;
-				count_tot = count_tot+count_word+1;
-				count_word = 0;
-			}
-		}else if(count_word != 0){
-			sb_append(new_buf,'\n');
-
-			sizer++;
-			int ind = 0;
-			while(word->data[ind]!='\0'){
-				sb_append(new_buf,word->data[ind]);
-				ind++;
-			}
-			sb_append(new_buf,' ');
-			sizer++;
-			word = (strbuf_t*)malloc(sizeof(strbuf_t));
-			sb_init(word,1);
-			i++;
-			count_tot = count_word;
-			count_word = 0;
-		}
-
-	}
-
-	 sb_append(new_buf,'\n');
-	 sizer++;
-	char* write_data = (char*)malloc(sizeof(char)*sizer);
-	int fin = 0;
-	while(fin<sizer){
-		write_data[fin] = new_buf->data[fin];
-		fin++;
-	}
-
-	write_data = (char*)realloc(write_data,sizeof(char)*(new_buf->used));
-	free(new_buf);
-	
-	int fdw = open(fnamew, O_RDWR | O_CREAT, S_IWUSR | S_IRUSR);
-	write(fdw,write_data,sizer);
-	close(fdw);
-	if(exit_status == 1){
-		printf("%c",'\n');
-		perror("words are too long");
-		close(fdw);
-		close(fd);
-		return EXIT_FAILURE;
-	}
-	close(fd);
-	return EXIT_SUCCESS;
-}
-
-
-int word_wrap(int limit, char* filename){
+int word_wrap(int limit, char* filename, char* wname){
 
 	char* fname = filename;
 	int lim = limit;
@@ -216,17 +38,17 @@ int word_wrap(int limit, char* filename){
 	int size = BYTES_READ;
 	int bytes_read;
 	if(fname){
-		printf("Opening file : %s \n" ,fname);
-
+		
 		fd = open(fname,O_RDONLY);
-		if(fd == -1){
+		if(fd == -1 || fd<0){
 			printf("File open error : %d \n" , errno);
 			return EXIT_FAILURE;
 		}
-		if(fd == 2){
+		if(fd == 20){
 			printf("File open error : %d \n" , errno);
 			return EXIT_FAILURE;
 		}
+		
 		bytes_read = read(fd,buff,size);
 	}else{
 		fd =  0; 
@@ -259,8 +81,8 @@ int word_wrap(int limit, char* filename){
 
 	// prints word wrapping needs work but base case works
 	while(buff[i]!= '\0' && i<strlen(buff)-1){
-		if(isspace(buff[i])!=0&& buff[i]!='\n'){
-			while(isspace(buff[i])!=0){
+		if(isspace(buff[i])!=0 && buff[i]!='\n'){
+			while(isspace(buff[i])!=0 && buff[i]!='\n'){
 				i++;
 			}
 		}
@@ -299,7 +121,7 @@ int word_wrap(int limit, char* filename){
 			 sb_append(new_buf,'\n');
 			 sizer++;
 			 int ind = 0;
-				while(word->data[ind]!='\0'){
+			while(word->data[ind]!='\0'){
 				sb_append(new_buf,word->data[ind]);
 				ind++;
 			}
@@ -316,14 +138,32 @@ int word_wrap(int limit, char* filename){
 				sb_append(new_buf,word->data[ind]);
 				ind++;
 			}
+			int mark = i;
+
+			int countw  = 0;
+			if(isspace(buff[mark])!=0&& buff[mark]!='\n'){
+			 while(isspace(buff[mark])!=0){
+					mark++;
+			    }
+
+		}
+		while(isspace(buff[mark])==0){
+			if(buff[mark] == '\n' ||buff[mark] == '\0'){
+				
+				break;
+			}
+			mark++;
+			countw++;
+		}
+
+		if(count_word+count_tot+countw < lim){
 			sb_append(new_buf,' ');
 			sizer++;
+		}
 			word = (strbuf_t*)malloc(sizeof(strbuf_t));
 			sb_init(word,1);
 	      if(buff[i] == '\n'){
-				i++;
-				int count = 1;
-				
+			  int count = 0;
 				while(isspace(buff[i])!= 0){
 					if(buff[i] == '\n'){
 						count++;
@@ -358,9 +198,8 @@ int word_wrap(int limit, char* filename){
 			sizer++;
 			word = (strbuf_t*)malloc(sizeof(strbuf_t));
 		      if(buff[i] == '\n'){
-				i++;
-				int count = 1;
 				
+				int count = 0;
 				while(isspace(buff[i])!= 0){
 					if(buff[i] == '\n'){
 						count++;
@@ -392,10 +231,16 @@ int word_wrap(int limit, char* filename){
 		write_data[fin] = new_buf->data[fin];
 		fin++;
 	}
-
-	write_data = (char*)realloc(write_data,sizeof(char)*(new_buf->used));
+     
 	free(new_buf);
-	write(1,write_data,sizer);
+
+	if(!wname){
+		write(1,write_data,sizer);
+	}else{
+		int wfd = open(wname,O_RDWR | O_CREAT, S_IWUSR | S_IRUSR);
+		write(wfd,write_data,sizer);
+		close(wfd);
+	}
 	if(exit_status == 1){
 		printf("%c",'\n');
 		perror("words are too long");
@@ -434,10 +279,15 @@ void get_file(const char *path)
 	DIR *dir = opendir(path);
 	
 	if (!dir)
+	{
+		printf("no file or dir");
+		perror("Directory is Invalid");
 		return;
-
+	}
+	int i = 0;
 	while ((dp = readdir(dir)) != NULL)
 	{
+		i++;
 		rc = regcomp(&regex, pattern, 0);
                 rc = regexec(&regex, dp->d_name, 0, NULL, 0);
                 debug("opening filename", dp->d_name);
@@ -459,14 +309,19 @@ void get_file(const char *path)
 				   if(is_dir(f)!=0){
 					 debug("is dir",f);
 				   }else{
-				   	word_wrap_dir(8,f,w);
+				   	word_wrap(8,f,w);
 				   }
 				   strcpy(f, "");
 				   strcpy(w, "");
 				}
 	}
 
-	closedir(dir);
+	int status = closedir(dir);
+	if(status == -1 ){
+		perror("Directory is Invalid");
+		return;
+	}
+	
 }
 int main(int argc, char* argv[]) {
     if (argc < 2 ) {
@@ -480,19 +335,15 @@ int main(int argc, char* argv[]) {
 	}
 	if (argc == 2){
 		printf("-- Press 'enter' when you complete your input -- \n");
-		word_wrap(width, NULL);
+		word_wrap(width, NULL, NULL);
 	}
 	if (argc == 3){
 		stat(argv[2], &sb);
 		if (S_ISREG(sb.st_mode))
-			word_wrap(width, argv[2]);
+			word_wrap(width, argv[2],NULL);
 		if (S_ISDIR(sb.st_mode))
 			get_file(argv[2]);
 	}
 	
-    
-   
-   
 	return 0;
 }
-
