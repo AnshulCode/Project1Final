@@ -1,4 +1,0 @@
-In general, word boundaries will not coincide with the ends of the buffer. Make sure you can handle receiving a word split between the data returned by consecutive calls to read().
-In particular, make sure you can handle a word
-
-that is too big for buffer ok life is good
