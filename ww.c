@@ -270,8 +270,8 @@ void create_write_file_name(char* f, char* mainb){
   strcat(mainb, add);
 }
 
-// gets files from directory
-void get_file(const char *path)
+// gets files from directory given path and width
+void get_file(const char *path,int width)
 {
 	const char *pattern = "^wrap\\..*";
 	regex_t regex;
@@ -310,7 +310,7 @@ void get_file(const char *path)
 				   if(is_dir(f)!=0){
 					 debug("is dir",f);
 				   }else{
-				   	word_wrap(8,f,w);
+				   	word_wrap(width,f,w);
 				   }
 				   strcpy(f, "");
 				   strcpy(w, "");
@@ -346,7 +346,7 @@ int main(int argc, char* argv[]) {
                  perror("words are too long");
 			}
 		}else if (S_ISDIR(sb.st_mode)){
-			get_file(argv[2]);
+			get_file(argv[2],width);
 		}else{
 			perror("Invalid Dir or file");
 		}
